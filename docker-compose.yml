@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  str0m:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: str0m-webrtc
+    init: true
+
+    # Environment variables for Docker bridge mode
+    environment:
+      # REQUIRED: Set this to your Docker host's public IP
+      # Examples:
+      #   - Cloud VM: Use the public IP from your cloud provider
+      #   - Local dev: Use your machine's LAN IP (e.g., 192.168.1.100)
+      #   - Get dynamically: See .env file example below
+      PUBLIC_IP: ${PUBLIC_IP:?PUBLIC_IP environment variable is required}
+
+      # OPTIONAL: IP to bind the UDP socket to (default: 0.0.0.0)
+      BIND_IP: ${BIND_IP:-0.0.0.0}
+
+      # OPTIONAL: Rust logging configuration
+      RUST_LOG: ${RUST_LOG:-str0m_docker=info,str0m=info}
+
+    # Port mappings
+    ports:
+      # HTTPS web server for signaling and serving HTML
+      - "3000:3000"
+
+      # UDP port range for WebRTC media streams
+      # Each connection uses one ephemeral port from this range
+      # Adjust based on expected concurrent connections
+      - "10000:10000/udp"
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check (optional - requires health endpoint implementation)
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "https://localhost:3000/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
+
+# Alternative configuration using host networking mode
+# Uncomment this service and comment out the one above to use host mode
+#
+# services:
+#   str0m-host:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     container_name: str0m-webrtc
+#     network_mode: host
+#     environment:
+#       RUST_LOG: ${RUST_LOG:-str0m_docker=info,str0m=info}
+#     restart: unless-stopped
+#
+# Note: With host mode, PUBLIC_IP is not needed and the app runs in standard mode
